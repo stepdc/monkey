@@ -1,5 +1,6 @@
 package token
 
+// token types
 const (
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
@@ -18,6 +19,9 @@ const (
 
 	LT = "<"
 	GT = ">"
+
+	EQ     = "=="
+	NOT_EQ = "!="
 
 	// Delimiters
 	COMMA     = ","
