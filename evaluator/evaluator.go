@@ -23,6 +23,23 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
 
+	case *ast.ReturnStatement:
+		val := Eval(node.ReturnValue, env)
+		if isError(val) {
+			return val
+		}
+		return &object.ReturnValue{Value: val}
+
+	case *ast.BlockStatement:
+		return evalBlockStatement(node, env)
+
+	case *ast.LetStatement:
+		val := Eval(node.Value, env)
+		if isError(val) {
+			return val
+		}
+		env.Set(node.Name.Value, val)
+
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
 		if isError(right) {
@@ -42,25 +59,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		return evalInfixExpression(node.Operator, left, right)
 
-	case *ast.BlockStatement:
-		return evalBlockStatement(node, env)
-
-	case *ast.ReturnStatement:
-		val := Eval(node.ReturnValue, env)
-		if isError(val) {
-			return val
-		}
-		return &object.ReturnValue{Value: val}
-
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
-
-	case *ast.LetStatement:
-		val := Eval(node.Value, env)
-		if isError(val) {
-			return val
-		}
-		env.Set(node.Name.Value, val)
 
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
@@ -120,15 +120,18 @@ func evalBlockStatement(block *ast.BlockStatement,
 
 	var result object.Object
 
+	// fixme: expression nil, & env not nil, nil evaluated
 	for _, statement := range block.Statements {
 		result = Eval(statement, env)
 
-		if result != nil {
-			rt := result.Type()
-			if rt == object.RETURN_VALUE_OBJ ||
-				rt == object.ERROR_OBJ {
-				return result
-			}
+		if result == nil {
+			continue
+		}
+
+		rt := result.Type()
+		if rt == object.RETURN_VALUE_OBJ ||
+			rt == object.ERROR_OBJ {
+			return result
 		}
 	}
 
